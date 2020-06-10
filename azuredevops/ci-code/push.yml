@@ -10,14 +10,6 @@ steps:
       projects: '$(Build.SourcesDirectory)/src/Bouvet.Syndicate.TestProject/Bouvet.Syndicate.TestProject.csproj'
       workingDirectory: '$(Build.SourcesDirectory)/src'
 
-  - task: CopyFiles@2
-    displayName: 'Copy client to output directory'
-    condition: eq(variables['System.PullRequest.PullRequestId'], '') # Check if build is PR or merge
-    inputs:
-      sourceFolder: '$(Build.SourcesDirectory)/src/Bouvet.Syndicate.TestProject.Client/bin/$(BuildConfiguration)/'
-      contents: '*.nupkg'
-      targetFolder: $(build.artifactstagingdirectory)/client
-
   - task: PublishBuildArtifacts@1
     displayName: 'Publish Artifact for web api'
     condition: eq(variables['System.PullRequest.PullRequestId'], '') # Check if build is PR or merge
