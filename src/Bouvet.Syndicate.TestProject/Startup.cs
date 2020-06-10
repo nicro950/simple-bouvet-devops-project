@@ -50,7 +50,6 @@ namespace Bouvet.Syndicate.TestProject
 
             services.AddSingleton<StorageManager>();
 
-
             services.AddScoped(x =>
             {
                 var settings = x.GetRequiredService<IOptions<ServiceBusSettings>>().Value;
