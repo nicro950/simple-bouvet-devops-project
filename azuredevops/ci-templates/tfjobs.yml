@@ -1,0 +1,51 @@
+parameters:
+  ContainerName: ''
+  FolderName: ''
+  StoragePrefix: 'bouvet'
+  TerraformVersion: '0.12.18'
+  Subscription: 'Bouvet'
+jobs:
+- job: Infrastructure_dev
+  pool: 'Private VS2019'
+  workspace:
+    clean: outputs
+  condition: and(ne(variables['build.sourceBranch'], 'refs/heads/master'), ne(variables['System.PullRequest.TargetBranch'], 'master'))
+  steps:
+  - template: tfplan.yml
+    parameters:
+      Environment: 'dev'
+      ContainerName: ${{ parameters.ContainerName }}
+      FolderName: ${{ parameters.FolderName }}
+      StoragePrefix: ${{ parameters.StoragePrefix }}
+      TerraformVersion: ${{ parameters.TerraformVersion }}
+      Subscription: ${{ parameters.Subscription }}
+
+- job: Infrastructure_test
+  pool: 'Private VS2019'
+  workspace:
+    clean: outputs
+  condition: or(eq(variables['build.sourceBranch'], 'refs/heads/master'), eq(variables['System.PullRequest.TargetBranch'], 'master'))
+  steps:
+  - template: tfplan.yml
+    parameters:
+      Environment: 'test'
+      ContainerName: ${{ parameters.ContainerName }}
+      FolderName: ${{ parameters.FolderName }}
+      StoragePrefix: ${{ parameters.StoragePrefix }}
+      TerraformVersion: ${{ parameters.TerraformVersion }}
+      Subscription: ${{ parameters.Subscription }}
+
+- job: Infrastructure_prod
+  pool: 'Private VS2019'
+  workspace:
+    clean: outputs
+  condition: or(eq(variables['build.sourceBranch'], 'refs/heads/master'), eq(variables['System.PullRequest.TargetBranch'], 'master'))
+  steps:
+  - template: tfplan.yml
+    parameters:
+      Environment: 'prod'
+      ContainerName: ${{ parameters.ContainerName }}
+      FolderName: ${{ parameters.FolderName }}
+      StoragePrefix: ${{ parameters.StoragePrefix }}
+      TerraformVersion: ${{ parameters.TerraformVersion }}
+      Subscription: ${{ parameters.Subscription }}

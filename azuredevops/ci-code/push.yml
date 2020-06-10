@@ -1,0 +1,43 @@
+
+steps:
+  - task: DotNetCoreCLI@2
+    displayName: Creating publish zip of web api
+    inputs:
+      command: publish
+      publishWebProjects: false
+      arguments: '-r win-x64 --self-contained --no-restore --configuration $(BuildConfiguration) --output "$(build.artifactstagingdirectory)/project" -f netcoreapp3.1'
+      zipAfterPublish: True
+      projects: '$(Build.SourcesDirectory)/src/Bouvet.Syndicate.TestProject/Bouvet.Syndicate.TestProject.csproj'
+      workingDirectory: '$(Build.SourcesDirectory)/src'
+
+  - task: CopyFiles@2
+    displayName: 'Copy client to output directory'
+    condition: eq(variables['System.PullRequest.PullRequestId'], '') # Check if build is PR or merge
+    inputs:
+      sourceFolder: '$(Build.SourcesDirectory)/src/Bouvet.Syndicate.TestProject.Client/bin/$(BuildConfiguration)/'
+      contents: '*.nupkg'
+      targetFolder: $(build.artifactstagingdirectory)/client
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact for web api'
+    condition: eq(variables['System.PullRequest.PullRequestId'], '') # Check if build is PR or merge
+    inputs:
+      PathtoPublish: '$(build.artifactstagingdirectory)/project'
+      ArtifactName: 'api'
+      publishLocation: Container
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact for api client'
+    condition: eq(variables['System.PullRequest.PullRequestId'], '') # Check if build is PR or merge
+    inputs:
+      PathtoPublish: '$(build.artifactstagingdirectory)/client'
+      ArtifactName: 'client'
+      publishLocation: Container
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact for api client'
+    condition: eq(variables['System.PullRequest.PullRequestId'], '') # Check if build is PR or merge
+    inputs:
+      PathtoPublish: '$(Build.SourcesDirectory)/fix-owner-app-sp.ps1'
+      ArtifactName: 'psfix'
+      publishLocation: Container

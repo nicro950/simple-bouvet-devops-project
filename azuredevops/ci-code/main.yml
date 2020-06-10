@@ -1,0 +1,26 @@
+name: $(BuildDefinitionName)_$(Build.SourceBranchName)_$(Date:yyyy-MM-dd).$(BuildID)
+
+trigger:
+  branches:
+    include:
+      - develop
+      - master
+  paths:
+    include:
+      - azuredevops
+      - src/Bouvet.Syndicate.TestProject
+      - src/Bouvet.Syndicate.TestProject.UnitTests
+      - infrastructure
+jobs:
+  - job: Build
+    displayName: Project Build And Publish
+    pool: 'Private VS2019'
+    workspace:
+      clean: all
+    variables:
+      BuildPlatform: 'any cpu'
+      BuildConfiguration: 'Release'
+    steps:
+      - template: build.yml
+      - template: test.yml
+      - template: push.yml

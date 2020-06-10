@@ -1,0 +1,85 @@
+parameters:
+  Environment: 'dev'
+  ContainerName: ''
+  FolderName: ''
+  StoragePrefix: 'bouvet'
+  TerraformVersion: '0.12.18'
+  Subscription: 'Bouvet'
+steps:
+- task: PowerShell@2
+  name: TerraformVersion
+  inputs:
+    targetType: 'inline'
+    script: |
+      mkdir $env:BUILD_ARTIFACTSTAGINGDIRECTORY/tf_version
+      'Write-Host "##vso[task.setvariable variable=terraformversion]${{ parameters.TerraformVersion }}"' | Out-File $env:BUILD_ARTIFACTSTAGINGDIRECTORY/tf_version/set_version.ps1
+
+- task: PublishBuildArtifacts@1
+  displayName: Publish Terraform Version Artifact
+  condition: eq(variables['System.PullRequest.PullRequestId'], '') # Check if build is PR or merge
+  inputs:
+    pathToPublish: $(Build.ArtifactStagingDirectory)/tf_version
+    artifactName: Version
+
+- task: CopyFiles@2
+  displayName: Copy artifacts
+  inputs:
+    SourceFolder: '$(System.DefaultWorkingDirectory)/${{ parameters.FolderName }}'
+    contents: |
+      **
+      !.vsts-ci.yml
+      !**/.git/**
+      !**/.terraform/**
+      !**/azuredevops/**
+      !.gitignore
+      !**/.vscode/**
+      !**/.vs/**
+      !**/src/**
+    targetFolder: $(Build.ArtifactStagingDirectory)/tf_artifact
+
+- task: a4789e5d-f6e8-431f-add9-379d640a883c@0
+  displayName: Terraform tool install
+  inputs:
+    terraformVersion: ${{ parameters.TerraformVersion }}
+
+- task: TerraformTaskV1@0
+  displayName: Terraform init
+  inputs:
+    provider: 'azurerm'
+    command: 'init'
+    backendServiceArm: '${{ parameters.Subscription }}-${{ parameters.Environment }}'
+    backendAzureRmResourceGroupName: '${{ parameters.StoragePrefix }}-${{ parameters.Environment }}-resource-group'
+    backendAzureRmStorageAccountName: '${{ parameters.StoragePrefix }}${{ parameters.Environment }}storageaccount'
+    backendAzureRmContainerName: '${{ parameters.ContainerName }}'
+    backendAzureRmKey: '${{ parameters.Environment }}.terraform.tfstate'
+    workingDirectory: $(Build.ArtifactStagingDirectory)/tf_artifact
+
+- task: TerraformTaskV1@0
+  displayName: Terraform validate
+  inputs:
+    provider: 'azurerm'
+    command: 'validate'
+    workingDirectory: $(Build.ArtifactStagingDirectory)/tf_artifact
+
+- task: TerraformTaskV1@0
+  displayName: Terraform plan
+  inputs:
+    provider: 'azurerm'
+    command: 'plan'
+    commandOptions: '-out=$(Build.ArtifactStagingDirectory)/tf_artifact/tfplan_${{ parameters.Environment }} -var "environment=${{ parameters.Environment }}"'
+    environmentServiceNameAzureRM: '${{ parameters.Subscription }}-${{ parameters.Environment }}'
+    workingDirectory: $(Build.ArtifactStagingDirectory)/tf_artifact
+
+- task: DeleteFiles@1
+  displayName: Delete build artifacts
+  inputs: 
+    sourceFolder: $(Build.ArtifactStagingDirectory)/tf_artifact
+    Contents: '.terraform'
+
+- task: PublishBuildArtifacts@1
+  displayName: Publish artifacts
+  condition: eq(variables['System.PullRequest.PullRequestId'], '') # Check if build is PR or merge
+  inputs:
+    pathToPublish: $(Build.ArtifactStagingDirectory)/tf_artifact
+    artifactName: Infrastructure
+    artifactType: container
