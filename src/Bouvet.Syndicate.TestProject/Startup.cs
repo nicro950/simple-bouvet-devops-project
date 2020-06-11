@@ -25,6 +25,7 @@ namespace Bouvet.Syndicate.TestProject
 
         public void ConfigureServices(IServiceCollection services)
         {
+            // This is a change
             services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 
             services.AddApplicationInsightsTelemetry();
@@ -49,7 +50,6 @@ namespace Bouvet.Syndicate.TestProject
             services.Configure<ServiceBusSettings>(x => Configuration.Bind("ServiceBus", x));
 
             services.AddSingleton<StorageManager>();
-
 
             services.AddScoped(x =>
             {
